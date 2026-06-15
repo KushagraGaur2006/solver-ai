@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStream
 
 load_dotenv()
 
-# Change this if your exact Gemma 4 checkpoint name differs.
+
 MODEL_ID = os.getenv("MODEL_ID", "nvidia/Nemotron-Cascade-2-30B-A3B")
 HF_TOKEN = os.getenv("HF_Token") or os.getenv("HF_TOKEN")
 
