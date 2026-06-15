@@ -123,7 +123,7 @@ with gr.Blocks(fill_height=True) as demo:
     gr.Markdown("# Helping you solve High School Maths and Science")
 
     # Replaced gr.Textbox with gr.Chatbot to handle the history state correctly in the UI
-    chatbot = gr.Chatbot(label="Chat History",type="tuples")
+    chatbot = gr.Chatbot(label="Chat History")
     
     inp = gr.Textbox(
         placeholder="How can I help you today...",
