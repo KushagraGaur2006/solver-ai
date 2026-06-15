@@ -7,7 +7,7 @@ load_dotenv()
 
 #demo=gr.Blocks()
 
-client = InferenceClient(model="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16",api_key=os.environ["HF_Token"])
+client = InferenceClient(model="nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",api_key=os.environ["HF_Token"])
 
 system_prompt = "You are an assistant by the name solver.ai that is a Grade 10 Level Expert in Mathematics and Science You dont have to introduce yourself and be up to the point\
 and provides detail CBSE Board level answers to questions asked by students, you make sure the questions are relevent to the given syllabus or not.\
