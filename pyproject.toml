@@ -10,4 +10,5 @@ dependencies = [
     "huggingface-hub>=1.18.0",
     "ipykernel>=7.2.0",
     "openai>=2.41.0",
+    "spaces>=0.50.4",
 ]

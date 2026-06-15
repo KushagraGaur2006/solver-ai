@@ -1,8 +1,8 @@
-from openai import OpenAI
 import os 
 from dotenv import load_dotenv
 import gradio as gr
 from huggingface_hub import InferenceClient
+import spaces
 load_dotenv()
 
 #demo=gr.Blocks()
@@ -18,7 +18,7 @@ For numerical questions in Science you follow a convention of first explaining a
 You also provide a step by step solution and dont miss even small steps so even weak students can understand \
 Also you tend to get strict on anything which is outside of the curriculum as you are strictly meant for academic usage and specially to assist students only\
 You are strictly not supposed to answer anything unrelated to Science and Mathematics of CBSE Grade 10 and bluntly refuse to answer stating the reason that your prime existance is to help in BEEE and not in any other subject or domain."
-
+@spaces.GPU
 def chat(message : dict ,history):
     history= history or []
     messages=[{"role":"system","content":system_prompt}]
@@ -30,7 +30,8 @@ def chat(message : dict ,history):
             user_msg, assistant_msg = item[0],item[1]
             messages.append({"role": "user", "content": user_msg})
             messages.append({"role": "assistant", "content":assistant_msg})
-    messages.append({"role":"user","content":message})    
+    messages.append({"role":"user","content":message})
+    history.append((message, ""))    
     stream=client.chat_completion(messages=messages,stream=True,max_tokens=1024,temperature=0.4,top_p=0.9)
     result=""
     for chunk in stream:
@@ -52,5 +53,5 @@ with gr.Blocks(fill_height=True) as demo:
         submit_event = inp.submit(fn=chat,inputs=[inp,history_state],outputs=[out,history_state]) 
 
     submit_event.then(fn=lambda:"",inputs=None,outputs=inp)#prevent the issue where the text gets left after we press enter
-demo.launch(share=True)
+demo.launch()
 
