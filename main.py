@@ -112,7 +112,7 @@ def chat(message: str, history):
 
     for token in streamer:
         result += token
-        history[-1] = (message, result)
+        history[-1]["content"] =  result
         # Yielding history directly maps perfectly to gr.Chatbot
         yield history 
 
