@@ -1,57 +1,199 @@
-import os 
+
+Hugging Face's logo Hugging Face
+
+    Models
+    Datasets
+    Spaces
+    Buckets new
+    Docs
+    Enterprise
+    Pricing
+        Website
+            Tasks
+            HuggingChat
+            Collections
+            Languages
+            Organizations
+        Community
+            Blog
+            Posts
+            Daily Papers
+            Learn
+            Discord
+            Forum
+            GitHub
+        Solutions
+            Team & Enterprise
+            Hugging Face PRO
+            Enterprise Support
+            Inference Providers
+            Inference Endpoints
+            Storage Buckets
+
+Spaces:
+build-small-hackathon
+/
+solver-ai
+App
+Files
+Community
+Settings
+solver-ai
+/ main.py
+Kushagra8041's picture
+Kushagra8041
+Update main.py
+917a8a1
+verified
+1 minute ago
+raw
+history
+blame
+edit
+delete
+4.6 kB
+import os
+import threading
+
 from dotenv import load_dotenv
 import gradio as gr
-from huggingface_hub import InferenceClient
 import spaces
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
+
 load_dotenv()
 
-#demo=gr.Blocks()
+# Change this if your exact Gemma 4 checkpoint name differs.
+MODEL_ID = os.getenv("MODEL_ID", "google/gemma-4-4b-it")
+HF_TOKEN = os.getenv("HF_Token") or os.getenv("HF_TOKEN")
 
-client = InferenceClient(model="nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16",api_key=os.environ["HF_Token"])
 
-system_prompt = "You are an assistant by the name solver.ai that is a Grade 10 Level Expert in Mathematics and Science You dont have to introduce yourself and be up to the point\
-and provides detail CBSE Board level answers to questions asked by students, you make sure the questions are relevent to the given syllabus or not.\
-Also as you are an expert so you explain like an expert too, You first explain step by step stating whats given what we have to find and what is the formula used and give a step by step analysis for Mathematics\
-And also suggest appropriate diagrams for students to draw\
-For Mathematical Identities like Sin Square theta = 1 - Cos square theta just write the identity and its answer in this way sin square theta = 1 - cos square theta nothing extra You dont have to explain step by step analysis Do not do thinking for the identities\
-For numerical questions in Science you follow a convention of first explaining as if you are answering like a teacher who explains very well and explains in such a way so that even weak students can understand too\
-You also provide a step by step solution and dont miss even small steps so even weak students can understand \
-Also you tend to get strict on anything which is outside of the curriculum as you are strictly meant for academic usage and specially to assist students only\
-You are strictly not supposed to answer anything unrelated to Science and Mathematics of CBSE Grade 10 and bluntly refuse to answer stating the reason that your prime existance is to help in BEEE and not in any other subject or domain."
-@spaces.GPU
-def chat(message : dict ,history):
-    history= history or []
-    messages=[{"role":"system","content":system_prompt}]
-    for item in history:
-        if isinstance(item,dict):
-           messages.append({"role":item["role"],"content":item["content"]}) 
+system_prompt = (
+    "You are an assistant by the name solver.ai that is a Grade 10 Level Expert in Mathematics and Science. "
+    "You do not have to introduce yourself and should get to the point. "
+    "Provide detailed CBSE board level answers to questions asked by students. "
+    "Make sure the questions are relevant to the given syllabus. "
+    "Explain like an expert. For Mathematics, first explain step by step by stating what is given, what we have to find, "
+    "and what formula is used. Also suggest appropriate diagrams for students to draw. "
+    "For mathematical identities like sin^2(theta) = 1 - cos^2(theta), just write the identity and its answer in this way: "
+    "sin^2(theta) = 1 - cos^2(theta). Do not add extra explanation. Do not do step-by-step thinking for identities. "
+    "For numerical questions in Science, explain like a very good teacher and include every small step so even weak students "
+    "can understand. "
+    "Be strict about anything outside the curriculum. You are meant for academic usage only and especially to assist students. "
+    "You must refuse anything unrelated to CBSE Grade 10 Mathematics and Science and state that your purpose is to help in "
+    "CBSE Grade 10 Mathematics and Science, not any other subject or domain."
+)
+
+tokenizer = None
+model = None
+
+
+def load_model():
+    global tokenizer, model
+
+    if tokenizer is None:
+        tokenizer = AutoTokenizer.from_pretrained(
+            MODEL_ID,
+            token=HF_TOKEN,
+        )
+
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+    if model is None:
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID,
+            token=HF_TOKEN,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+        )
+
+    return model, tokenizer
+
+
+def build_messages(message, history):
+    messages = [{"role": "system", "content": system_prompt}]
+
+    for item in history or []:
+        if isinstance(item, dict):
+            messages.append({"role": item["role"], "content": item["content"]})
         else:
-
-            user_msg, assistant_msg = item[0],item[1]
+            user_msg, assistant_msg = item[0], item[1]
             messages.append({"role": "user", "content": user_msg})
-            messages.append({"role": "assistant", "content":assistant_msg})
-    messages.append({"role":"user","content":message})
-    history.append((message, ""))    
-    stream=client.chat_completion(messages=messages,stream=True,max_tokens=1024,temperature=0.4,top_p=0.9)
-    result=""
-    for chunk in stream:
-        token=chunk.choices[0].delta.content or ""
-        result+=token
-        history[-1]=(message,result)
-        yield result,history
-    
-    
-    
+            messages.append({"role": "assistant", "content": assistant_msg})
+
+    messages.append({"role": "user", "content": message})
+    return messages
+
+
+@spaces.GPU(duration=120)
+def chat(message: str, history):
+    history = history or []
+    model, tokenizer = load_model()
+
+    messages = build_messages(message, history)
+    prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = {key: value.to(model.device) for key, value in inputs.items()}
+
+    streamer = TextIteratorStreamer(
+        tokenizer,
+        skip_prompt=True,
+        skip_special_tokens=True,
+    )
+
+    generation_kwargs = {
+        **inputs,
+        "streamer": streamer,
+        "max_new_tokens": 1024,
+        "temperature": 0.4,
+        "top_p": 0.9,
+        "do_sample": True,
+    }
+
+    thread = threading.Thread(target=model.generate, kwargs=generation_kwargs)
+    thread.start()
+
+    history.append((message, ""))
+    result = ""
+
+    for token in streamer:
+        result += token
+        history[-1] = (message, result)
+        # Yielding history directly maps perfectly to gr.Chatbot
+        yield history 
+
+    thread.join()
+
+
 with gr.Blocks(fill_height=True) as demo:
-    history_state = gr.State([])
-    gr.Markdown("Helping you solve High School Maths and Science")
-    
-    inp = gr.Textbox(placeholder="How can I help you today...",lines=2,max_lines=5,label="Input",submit_btn=True)
-    
-    with gr.Column(variant="panel") :
-        out = gr.Textbox(lines=7,max_lines=10,label="Output")  
-        submit_event = inp.submit(fn=chat,inputs=[inp,history_state],outputs=[out,history_state]) 
+    gr.Markdown("# Helping you solve High School Maths and Science")
 
-    submit_event.then(fn=lambda:"",inputs=None,outputs=inp)#prevent the issue where the text gets left after we press enter
-demo.launch()
+    # Replaced gr.Textbox with gr.Chatbot to handle the history state correctly in the UI
+    chatbot = gr.Chatbot(label="Chat History", bubble_full_width=False)
+    
+    inp = gr.Textbox(
+        placeholder="How can I help you today...",
+        lines=2,
+        max_lines=5,
+        label="Input",
+    )
 
+    # Submit event updates the chatbot interface directly
+    submit_event = inp.submit(
+        fn=chat,
+        inputs=[inp, chatbot],
+        outputs=[chatbot],
+    )
+
+    # Clear input box after submission
+    submit_event.then(fn=lambda: "", inputs=None, outputs=inp)
+
+
+if __name__ == "__main__":
+    demo.launch()
