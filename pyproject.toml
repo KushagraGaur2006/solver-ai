@@ -1,0 +1,13 @@
+[project]
+name = "solver-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dotenv>=0.9.9",
+    "gradio>=6.16.0",
+    "huggingface-hub>=1.18.0",
+    "ipykernel>=7.2.0",
+    "openai>=2.41.0",
+]
