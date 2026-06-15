@@ -106,7 +106,8 @@ def chat(message: str, history):
     thread = threading.Thread(target=model.generate, kwargs=generation_kwargs)
     thread.start()
 
-    history.append((message, ""))
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": ""})
     result = ""
 
     for token in streamer:
