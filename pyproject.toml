@@ -1,7 +1,7 @@
 [project]
 name = "solver-ai"
 version = "0.1.0"
-description = "Add your description here"
+description = "Solver is a Pedagogical Agent that helps High School Students with Mathematics and Science Queries"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,5 +12,5 @@ dependencies = [
     "openai>=2.41.0",
     "spaces>=0.50.4",
     "torch>=2.12.0",
-    "transformers>=5.12.0",
+    "transformers>=5.12.0"
 ]
