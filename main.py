@@ -11,7 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStream
 load_dotenv()
 
 
-MODEL_ID = os.getenv("MODEL_ID", "nvidia/Nemotron-Cascade-2-30B-A3B")
+MODEL_ID = os.getenv("MODEL_ID", "nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16")
 HF_TOKEN = os.getenv("HF_Token") or os.getenv("HF_TOKEN")
 
 
