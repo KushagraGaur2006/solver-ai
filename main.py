@@ -11,7 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStream
 load_dotenv()
 
 
-MODEL_ID = os.getenv("MODEL_ID" = "google/gemma-4-12B-it")
+MODEL_ID = os.getenv("MODEL_ID","google/gemma-4-12B-it")
 HF_TOKEN = os.getenv("HF_Token") or os.getenv("HF_TOKEN")
 
 
